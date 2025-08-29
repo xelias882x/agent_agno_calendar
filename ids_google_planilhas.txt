@@ -1,0 +1,5 @@
+id_plan_teste_agno = 1gFdzRsFWZaNoCYHzzIntHp2NnXCXOfTRvHCcCDXpdIw
+id_plan_empresa_teste = 12IBLqw513VIXIqFwYHoKj8TfsPtb3chUmXKKYMFq-lo
+
+
+na celula A1 da planilha chamada 'teste agno' de id 1gFdzRsFWZaNoCYHzzIntHp2NnXCXOfTRvHCcCDXpdIw adicione o texto Teste1"

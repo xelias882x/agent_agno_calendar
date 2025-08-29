@@ -1,48 +1,111 @@
 import datetime
-import os.path
-from typing import List, Optional
- 
-from agno.tools import Toolkit
-from google.auth.transport.requests import Request
-from google.oauth2.credentials import Credentials
-from google_auth_oauthlib.flow import InstalledAppFlow
-from googleapiclient.discovery import build
-from googleapiclient.errors import HttpError
+import os
+from functools import wraps
+from pathlib import Path
+from typing import Any, List, Optional
 
-# Se modificar esses escopos, delete o arquivo token.json.
-SCOPES = ["https://www.googleapis.com/auth/calendar"]
+from agno.tools import Toolkit
+from agno.utils.log import log_debug, log_error, log_info
+
+try:
+    from google.auth.transport.requests import Request
+    from google.oauth2.credentials import Credentials
+    from google_auth_oauthlib.flow import InstalledAppFlow
+    from googleapiclient.discovery import Resource, build
+    from googleapiclient.errors import HttpError
+
+except ImportError:
+    raise ImportError(
+        "Google client libraries not found, Please install using `pip install google-api-python-client google-auth-httplib2 google-auth-oauthlib`"
+    )
+
+
+def authenticate(func):
+    """Decorator to ensure authentication before executing the method."""
+
+    @wraps(func)
+    def wrapper(self, *args, **kwargs):
+        try:
+            if not self.creds or not self.creds.valid:
+                self._auth()
+            if not self.service:
+                self.service = build("calendar", "v3", credentials=self.creds)
+        except Exception as e:
+            log_error(f"An error occurred during authentication: {e}")
+            return f"Authentication failed: {e}"
+        return func(self, *args, **kwargs)
+
+    return wrapper
+
 
 class GoogleCalendarTool(Toolkit):
     """Um toolkit para interagir com a API do Google Calendar."""
+    DEFAULT_SCOPES = {
+        "read": "https://www.googleapis.com/auth/calendar.readonly",
+        "write": "https://www.googleapis.com/auth/calendar",
+    }
+    service: Optional[Resource]
 
-    def __init__(self, **kwargs):
-        """Inicializa a ferramenta e autentica com a API do Google Calendar."""
-        creds = self._get_credentials()
-        self.service = build("calendar", "v3", credentials=creds)
-        print("Ferramenta Google Calendar conectada com sucesso.")
-        # Registra os métodos decorados como ferramentas para este toolkit.
-        # Adicionamos as novas ferramentas de CRUD aqui.
+    def __init__(
+        self,
+        scopes: Optional[List[str]] = None,
+        credentials_path: Optional[str] = None,
+        token_path: Optional[str] = "calendar_token.json",
+        oauth_port: int = 8080,
+        allow_update: bool = True,
+        **kwargs,
+    ):
+        self.creds: Optional[Credentials] = None
+        self.service: Optional[Resource] = None
+        self.oauth_port: int = oauth_port
+        self.credentials_path = credentials_path
+        self.token_path = token_path
+        self.allow_update = allow_update
+        self.scopes = scopes or []
+
+        if not self.scopes:
+            self.scopes.append(self.DEFAULT_SCOPES["read"])
+            if self.allow_update:
+                self.scopes.append(self.DEFAULT_SCOPES["write"])
+
+        if self.allow_update and self.DEFAULT_SCOPES["write"] not in self.scopes:
+            raise ValueError(f"The scope {self.DEFAULT_SCOPES['write']} is required for write operations")
+        if self.DEFAULT_SCOPES["read"] not in self.scopes and self.DEFAULT_SCOPES["write"] not in self.scopes:
+            raise ValueError(
+                f"Either {self.DEFAULT_SCOPES['read']} or {self.DEFAULT_SCOPES['write']} is required for read operations"
+            )
+        
         super().__init__(
             name="GoogleCalendarTool",
             tools=[self.list_events, self.create_event, self.update_event, self.delete_event],
-            **kwargs
+            **kwargs,
         )
+        log_info("Ferramenta Google Calendar conectada com sucesso.")
 
-    def _get_credentials(self):
+    def _auth(self) -> None:
         """Obtém as credenciais do usuário, lidando com o fluxo de autenticação."""
-        creds = None
-        if os.path.exists("token.json"):
-            creds = Credentials.from_authorized_user_file("token.json", SCOPES)
-        if not creds or not creds.valid:
-            if creds and creds.expired and creds.refresh_token:
-                creds.refresh(Request())
-            else:
-                flow = InstalledAppFlow.from_client_secrets_file("credentials.json", SCOPES)
-                creds = flow.run_local_server(port=0)
-            with open("token.json", "w") as token:
-                token.write(creds.to_json())
-        return creds
+        if self.creds and self.creds.valid:
+            return
 
+        token_file = Path(self.token_path or "calendar_token.json")
+        creds_file = Path(self.credentials_path or "credentials.json")
+
+        if token_file.exists():
+            self.creds = Credentials.from_authorized_user_file(str(token_file), self.scopes)
+
+        if not self.creds or not self.creds.valid:
+            if self.creds and self.creds.expired and self.creds.refresh_token:
+                self.creds.refresh(Request())
+            else:
+                flow = InstalledAppFlow.from_client_secrets_file(str(creds_file), self.scopes)
+                self.creds = flow.run_local_server(port=self.oauth_port)
+
+            if self.creds:
+                token_file.write_text(self.creds.to_json())
+                log_debug("Successfully authenticated with Google Calendar API.")
+                log_info(f"Token file path: {token_file}")
+
+    @authenticate
     def list_events(self, limit: int = 10) -> str:
         """
         Busca e lista os próximos eventos da agenda do Google Calendar do usuário.
@@ -58,7 +121,7 @@ class GoogleCalendarTool(Toolkit):
         """
         try:
             now = datetime.datetime.utcnow().isoformat() + "Z"  # 'Z' indica UTC
-            events_result = self.service.events().list(calendarId="primary", timeMin=now, maxResults=limit, singleEvents=True, orderBy="startTime").execute()
+            events_result = self.service.events().list(calendarId="primary", timeMin=now, maxResults=limit, singleEvents=True, orderBy="startTime").execute() # type: ignore
             events = events_result.get("items", [])
  
             if not events:
@@ -71,6 +134,7 @@ class GoogleCalendarTool(Toolkit):
         except Exception as e:
             return f"Ocorreu um erro inesperado: {e}"
 
+    @authenticate
     def create_event(self, summary: str, start_time: str, end_time: str, description: Optional[str] = None, location: Optional[str] = None) -> str:
         """
         Cria um novo evento no Google Calendar. As datas e horas devem estar no formato ISO 8601 (ex: '2024-09-15T10:00:00-03:00').
@@ -93,13 +157,14 @@ class GoogleCalendarTool(Toolkit):
                 'start': {'dateTime': start_time},
                 'end': {'dateTime': end_time},
             }
-            created_event = self.service.events().insert(calendarId='primary', body=event).execute()
+            created_event = self.service.events().insert(calendarId='primary', body=event).execute() # type: ignore
             return f"Evento criado com sucesso! Link: {created_event.get('htmlLink')}"
         except HttpError as error:
             return f"Ocorreu um erro ao criar o evento: {error}"
         except Exception as e:
             return f"Ocorreu um erro inesperado ao criar o evento: {e}"
 
+    @authenticate
     def update_event(self, event_id: str, summary: Optional[str] = None, start_time: Optional[str] = None, end_time: Optional[str] = None, description: Optional[str] = None, location: Optional[str] = None) -> str:
         """
         Atualiza um evento existente no Google Calendar usando seu ID. Apenas os campos fornecidos serão atualizados.
@@ -116,17 +181,18 @@ class GoogleCalendarTool(Toolkit):
             Uma mensagem de confirmação ou uma mensagem de erro.
         """
         try:
-            event = self.service.events().get(calendarId='primary', eventId=event_id).execute()
+            event = self.service.events().get(calendarId='primary', eventId=event_id).execute() # type: ignore
             if summary: event['summary'] = summary
             if location: event['location'] = location
             if description: event['description'] = description
             if start_time: event['start']['dateTime'] = start_time
             if end_time: event['end']['dateTime'] = end_time
-            updated_event = self.service.events().update(calendarId='primary', eventId=event_id, body=event).execute()
+            updated_event = self.service.events().update(calendarId='primary', eventId=event_id, body=event).execute() # type: ignore
             return f"Evento '{updated_event.get('summary')}' atualizado com sucesso."
         except HttpError as error:
             return f"Ocorreu um erro ao atualizar o evento: {error}"
 
+    @authenticate
     def delete_event(self, event_id: str) -> str:
         """
         Exclui um evento do Google Calendar usando seu ID.
@@ -138,7 +204,7 @@ class GoogleCalendarTool(Toolkit):
             Uma mensagem de confirmação ou uma mensagem de erro.
         """
         try:
-            self.service.events().delete(calendarId='primary', eventId=event_id).execute()
+            self.service.events().delete(calendarId='primary', eventId=event_id).execute() # type: ignore
             return f"Evento com ID {event_id} foi excluído com sucesso."
         except HttpError as error:
             return f"Ocorreu um erro ao excluir o evento: {error}"
