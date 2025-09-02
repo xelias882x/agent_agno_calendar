@@ -109,7 +109,7 @@ class GoogleGmailTool(Toolkit):
                         "auth_provider_x509_cert_url": "https://www.googleapis.com/oauth2/v1/certs",
                         "redirect_uris": [os.getenv("GOOGLE_REDIRECT_URI", "http://localhost")],
                     }
-                }
+                } 
                 if creds_file.exists():
                     flow = InstalledAppFlow.from_client_secrets_file(str(creds_file), self.scopes)
                 else:

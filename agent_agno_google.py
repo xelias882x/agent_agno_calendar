@@ -1,5 +1,6 @@
+
 from agno.agent import Agent
-from agno.models.openai import OpenAIChat
+from agno.models.google.gemini import Gemini
 
 # Importe a ferramenta do Google Calendar
 from calendar_tool import GoogleCalendarTool
@@ -15,9 +16,12 @@ GMAIL_TOKEN_PATH = "gmail_token.json"
 
 # criando o modelo a ser usado local
 agent = Agent(
-    model=OpenAIChat(
-        id="gpt-oss:20b", base_url="http://localhost:11434/v1", api_key="ollama"
-    ),
+    # A chave de API do Google é necessária. A forma mais segura é usar variáveis de ambiente.
+    # Como alternativa (não recomendada para produção), você pode passá-la aqui.
+    # Substitua "SUA_CHAVE_API_AQUI" pela sua chave real.
+    # O erro 503 indica que o modelo "gemini-2.5-pro" está sobrecarregado ou indisponível.
+    # Recomendo usar um modelo estável como "gemini-1.5-pro-latest".
+    model=Gemini(id="gemini-2.5-flash", api_key="AIzaSyD8EQ2oLhczkeHrWnOgVeuhCsctXvvLE6c"),
     # Agora o agente tem acesso ao Calendário, Sheets e Gmail.
     tools=[
         GoogleCalendarTool(token_path=CALENDAR_TOKEN_PATH),
@@ -53,9 +57,3 @@ if __name__ == "__main__":
             agent.print_response(pergunta, stream=True)
         except Exception as e:
             print(f"Ocorreu um erro: {e}")
-
-
-    # Se você quiser usar o playground do Agno, descomente as linhas abaixo:
-    # pg = Playground(agents=[agent])
-    # app = pg.get_app(use_async=False)
-    # pg.serve("agent_agno_calendar:app", reload=True, port=8000)

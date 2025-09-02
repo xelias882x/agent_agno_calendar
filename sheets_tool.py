@@ -130,7 +130,7 @@ class GoogleSheetsTool(Toolkit):
         Creates a new Google Spreadsheet.
 
         Args:
-            title (str): The title of the spreadsheet.
+            title (str): The title of the spreadsheet. 
 
         Returns:
             str: JSON string containing the created spreadsheet's properties or an error message.
