@@ -104,7 +104,7 @@ class GoogleGmailTool(Toolkit):
                         "client_id": os.getenv("GOOGLE_CLIENT_ID"),
                         "client_secret": os.getenv("GOOGLE_CLIENT_SECRET"),
                         "project_id": os.getenv("GOOGLE_PROJECT_ID"),
-                        "auth_uri": "https://accounts.google.com/o/oauth2/auth",
+                        "auth_uri": "https://accounts.google.com/o/oauth2/auth", # type: ignore
                         "token_uri": "https://oauth2.googleapis.com/token",
                         "auth_provider_x509_cert_url": "https://www.googleapis.com/oauth2/v1/certs",
                         "redirect_uris": [os.getenv("GOOGLE_REDIRECT_URI", "http://localhost")],

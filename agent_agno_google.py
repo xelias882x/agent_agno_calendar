@@ -1,5 +1,7 @@
 
+import os
 from agno.agent import Agent
+from dotenv import load_dotenv
 from agno.models.google.gemini import Gemini
 
 # Importe a ferramenta do Google Calendar
@@ -8,6 +10,9 @@ from calendar_tool import GoogleCalendarTool
 from sheets_tool import GoogleSheetsTool
 # Importe a nova ferramenta personalizada do Gmail
 from gmail_tool import GoogleGmailTool
+
+# Carrega as variáveis de ambiente do arquivo .env
+load_dotenv()
 
 # Definição de constantes para os caminhos dos tokens para melhor manutenção
 CALENDAR_TOKEN_PATH = "calendar_token.json"
@@ -20,8 +25,8 @@ agent = Agent(
     # Como alternativa (não recomendada para produção), você pode passá-la aqui.
     # Substitua "SUA_CHAVE_API_AQUI" pela sua chave real.
     # O erro 503 indica que o modelo "gemini-2.5-pro" está sobrecarregado ou indisponível.
-    # Recomendo usar um modelo estável como "gemini-1.5-pro-latest".
-    model=Gemini(id="gemini-2.5-flash", api_key="AIzaSyD8EQ2oLhczkeHrWnOgVeuhCsctXvvLE6c"),
+    # Recomendo usar um modelo estável como "gemini-1.5-pro-latest" ou "gemini-1.5-flash-latest".
+    model=Gemini(id="gemini-1.5-flash-latest", api_key=os.getenv("GEMINI_API_KEY")),
     # Agora o agente tem acesso ao Calendário, Sheets e Gmail.
     tools=[
         GoogleCalendarTool(token_path=CALENDAR_TOKEN_PATH),
