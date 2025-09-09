@@ -8,6 +8,7 @@ from sheets_tool import GoogleSheetsTool
 # Importe a nova ferramenta personalizada do Gmail
 from gmail_tool import GoogleGmailTool
 
+
 # Definição de constantes para os caminhos dos tokens para melhor manutenção
 CALENDAR_TOKEN_PATH = "calendar_token.json"
 SHEETS_TOKEN_PATH = "sheets_token.json"
