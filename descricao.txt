@@ -1,0 +1,12 @@
+Resumo do Projeto
+Este projeto consiste na criação de um assistente pessoal inteligente, construído em Python, que integra e orquestra diversas APIs do Google Workspace. O núcleo do sistema é um agente de IA, utilizando a biblioteca agno e modelos de linguagem avançados (como Gemini do Google e modelos locais via Ollama), que interpreta comandos em linguagem natural para interagir com os serviços do Google.
+
+O assistente é equipado com um conjunto de ferramentas modulares e reutilizáveis que permitem:
+
+Gerenciar o Google Calendar: Listar, criar, atualizar e excluir eventos.
+Interagir com o Google Sheets: Ler, escrever e adicionar dados a planilhas.
+Controlar o Gmail: Pesquisar, ler detalhes e enviar e-mails.
+A arquitetura lida de forma robusta com a autenticação OAuth 2.0, gerenciando tokens de acesso de forma segura para garantir a comunicação com as APIs do Google. O resultado é um agente conversacional capaz de executar tarefas complexas no ecossistema Google, servindo como uma base sólida para automação de produtividade pessoal e empresarial.
+
+
+Criei um assistente pessoal inteligente para automação de produtividade, capaz de entender comandos em português para gerenciar o dia a dia no Google Workspace. Utilizando Python e a estrutura de agentes de IA da agno, o sistema se conecta de forma segura ao Google Calendar, Sheets e Gmail para agendar reuniões, analisar dados em planilhas e gerenciar e-mails, demonstrando a aplicação prática de LLMs na automação de tarefas cotidianas.
