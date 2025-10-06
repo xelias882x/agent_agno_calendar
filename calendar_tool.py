@@ -1,7 +1,7 @@
 import datetime
 from typing import Any, List, Optional
 
-from agno.tools import Toolkit
+from langchain_core.tools import tool, StructuredTool
 from agno.utils.log import log_info
 
 try:
@@ -14,26 +14,26 @@ except ImportError:
 from google_auth import GoogleAuthManager
 
 
-class GoogleCalendarTool(Toolkit):
+class GoogleCalendarTool:
     """Um toolkit para interagir com a API do Google Calendar."""
 
     SCOPES = ["https://www.googleapis.com/auth/calendar"]
 
-    def __init__(
-        self,
-        auth_manager: GoogleAuthManager,
-        **kwargs,
-    ):
+    def __init__(self, auth_manager: GoogleAuthManager):
         self.auth_manager = auth_manager
-        super().__init__(
-            name="GoogleCalendarTool",
-            tools=[self.list_events, self.create_event, self.update_event, self.delete_event],
-            **kwargs,
-        )
         log_info("Ferramenta Google Calendar conectada com sucesso.")
 
-    @property
+    def get_tools(self) -> List[Any]:
+        """Retorna uma lista de todas as ferramentas disponíveis neste toolkit."""
+        return [
+            StructuredTool.from_function(self.list_events),
+            StructuredTool.from_function(self.create_event),
+            StructuredTool.from_function(self.update_event),
+            StructuredTool.from_function(self.delete_event),
+        ]
+
     def service(self):
+        """Método auxiliar para obter o serviço autenticado da API."""
         return self.auth_manager.get_service("calendar", "v3")
 
     def list_events(self, limit: int = 10) -> str:
@@ -51,7 +51,7 @@ class GoogleCalendarTool(Toolkit):
         """
         try:
             now = datetime.datetime.utcnow().isoformat() + "Z"  # 'Z' indica UTC
-            events_result = self.service.events().list(calendarId="primary", timeMin=now, maxResults=limit, singleEvents=True, orderBy="startTime").execute()
+            events_result = self.service().events().list(calendarId="primary", timeMin=now, maxResults=limit, singleEvents=True, orderBy="startTime").execute()
             events = events_result.get("items", [])
  
             if not events:
@@ -86,7 +86,7 @@ class GoogleCalendarTool(Toolkit):
                 'start': {'dateTime': start_time},
                 'end': {'dateTime': end_time},
             }
-            created_event = self.service.events().insert(calendarId='primary', body=event).execute()
+            created_event = self.service().events().insert(calendarId='primary', body=event).execute()
             return f"Evento criado com sucesso! Link: {created_event.get('htmlLink')}"
         except HttpError as error:
             return f"Ocorreu um erro ao criar o evento: {error}"
@@ -110,7 +110,7 @@ class GoogleCalendarTool(Toolkit):
             Uma mensagem de confirmação ou uma mensagem de erro.
         """
         try:
-            event = self.service.events().get(calendarId='primary', eventId=event_id).execute()
+            event = self.service().events().get(calendarId='primary', eventId=event_id).execute()
             
             # Lógica para combinar a data existente com a nova hora, se necessário
             def get_full_datetime(new_time_str: Optional[str], original_datetime_str: str) -> Optional[str]:
@@ -136,7 +136,7 @@ class GoogleCalendarTool(Toolkit):
             new_end = get_full_datetime(end_time, event['end'].get('dateTime'))
             if new_end: event['end']['dateTime'] = new_end
 
-            updated_event = self.service.events().update(calendarId='primary', eventId=event_id, body=event).execute()
+            updated_event = self.service().events().update(calendarId='primary', eventId=event_id, body=event).execute()
             return f"Evento '{updated_event.get('summary')}' atualizado com sucesso."
         except HttpError as error:
             return f"Ocorreu um erro ao atualizar o evento: {error}"
@@ -152,7 +152,7 @@ class GoogleCalendarTool(Toolkit):
             Uma mensagem de confirmação ou uma mensagem de erro.
         """
         try:
-            self.service.events().delete(calendarId='primary', eventId=event_id).execute()
+            self.service().events().delete(calendarId='primary', eventId=event_id).execute()
             return f"Evento com ID {event_id} foi excluído com sucesso."
         except HttpError as error:
             return f"Ocorreu um erro ao excluir o evento: {error}"

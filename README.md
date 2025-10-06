@@ -16,20 +16,23 @@ A interface é construída com Streamlit, permitindo uma interação amigável e
     -   Atualizar células.
     -   Adicionar novas linhas de dados.
 -   **📧 Gmail:**
-    -   Pesquisar e-mails com filtros avançados (assunto, remetente, etc.).
+    -   Pesquisar e-mails com filtros avançados.
     -   Ler detalhes e resumos de e-mails.
     -   Enviar e-mails.
+-   **🧠 Base de Conhecimento (RAG):** Pesquisar e responder perguntas com base em documentos internos (`.txt`, `.md`, `.pdf`, `.xlsx`, `.csv`). O agente pode combinar informações internas com outras ferramentas (ex: encontrar uma política e enviá-la por e-mail).
 
 ## 🚀 Tecnologias Utilizadas
 
 -   **Linguagem:** Python 3.9+
--   **Interface:** Streamlit
+-   **Interface Web:** Streamlit
 -   **Framework de Agente:** `agno`
 -   **Modelos de IA Suportados:**
     -   Google Gemini (ex: `gemini-1.5-flash-latest`)
-    -   OpenAI (ex: `gpt-4o-mini`)
-    -   Modelos locais via Ollama
+    -   Modelos locais via Ollama (ex: `gtp-oss:20b`, `llama3`)
 -   **APIs:** Google Calendar, Google Sheets, Google Gmail
+-   **RAG (Retrieval-Augmented Generation):**
+    -   `llama-index` para orquestração.
+    -   `chromadb` como banco de dados vetorial persistente.
 
 ## ⚙️ Configuração do Ambiente
 
@@ -72,8 +75,8 @@ python -m venv env
 # No macOS/Linux:
 # source env/bin/activate
 
-# Instale as bibliotecas
-pip install streamlit agno-ai python-dotenv google-api-python-client google-auth-httplib2 google-auth-oauthlib openai
+# Instale as bibliotecas a partir do arquivo requirements.txt
+pip install -r requirements.txt
 ```
 
 ### 4. Variáveis de Ambiente
@@ -83,7 +86,6 @@ Crie um arquivo chamado `.env` na raiz do projeto e adicione as credenciais obti
 ```ini
 # Chaves para os modelos de IA (adicione as que for usar)
 GEMINI_API_KEY="SUA_CHAVE_API_DO_GEMINI"
-OPENAI_API_KEY="SUA_CHAVE_API_DA_OPENAI"
 
 # Credenciais do Google Cloud OAuth
 GOOGLE_CLIENT_ID="SEU_ID_DE_CLIENTE_OAUTH.apps.googleusercontent.com"

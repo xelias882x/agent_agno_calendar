@@ -1,25 +1,14 @@
-# Arquivos de Token de Autenticação do Google (MUITO IMPORTANTE)
-# Estes arquivos são gerados após o login e contêm suas chaves de acesso.
-token.json
-gmail_token.json
-calendar_token.json
-sheets_token.json
+# Ambiente Virtual
+env/
+venv/
 
-# Arquivo de Credenciais de Cliente OAuth do Google (MUITO IMPORTANTE)
-# Este arquivo contém o client_id e client_secret da sua aplicação.
-credentials.json
-credenciais_calendar.json
-
-# Arquivos de ambiente (se você usar .env)
-.env
-
-# Diretórios de cache e dependências do Python
+# Arquivos de cache e banco de dados
 __pycache__/
 *.pyc
-.venv/
-venv/
-env/
+chroma_db/
 
-# Arquivos de IDEs
-.vscode/
-.idea/
+# Arquivos de credenciais e tokens
+.env
+google_token.json
+credentials.json
+*.json

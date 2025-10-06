@@ -53,15 +53,21 @@ class GoogleAuthManager:
                 GoogleAuthManager._creds.refresh(Request())
             else:
                 log_info("Nenhum token válido encontrado. Iniciando novo fluxo de autenticação...")
+                
+                client_id = os.getenv("GOOGLE_CLIENT_ID")
+                client_secret = os.getenv("GOOGLE_CLIENT_SECRET")
+
+                if not client_id or not client_secret:
+                    error_msg = "As variáveis de ambiente GOOGLE_CLIENT_ID e GOOGLE_CLIENT_SECRET não foram encontradas. Verifique seu arquivo .env."
+                    log_error(error_msg)
+                    raise ValueError(error_msg)
+
                 client_config = {
                     "installed": {
-                        "client_id": os.getenv("GOOGLE_CLIENT_ID"),
-                        "client_secret": os.getenv("GOOGLE_CLIENT_SECRET"),
-                        "project_id": os.getenv("GOOGLE_PROJECT_ID"),
+                        "client_id": client_id,
+                        "client_secret": client_secret,
                         "auth_uri": "https://accounts.google.com/o/oauth2/auth",
                         "token_uri": "https://oauth2.googleapis.com/token",
-                        "auth_provider_x509_cert_url": "https://www.googleapis.com/oauth2/v1/certs",
-                        "redirect_uris": [os.getenv("GOOGLE_REDIRECT_URI", "http://localhost")],
                     }
                 }
                 flow = InstalledAppFlow.from_client_config(client_config, self.scopes)

@@ -1,6 +1,6 @@
 from typing import Any, List, Optional
 
-from agno.tools import Toolkit
+from langchain_core.tools import tool, StructuredTool
 from agno.utils.log import log_error, log_info
 
 try:
@@ -14,30 +14,25 @@ except ImportError:
 from google_auth import GoogleAuthManager
 
 
-class GoogleSheetsTool(Toolkit):
+class GoogleSheetsTool:
     """Um toolkit para interagir com a API do Google Sheets."""
 
     SCOPES = ["https://www.googleapis.com/auth/spreadsheets"]
 
-    def __init__(
-        self,
-        auth_manager: GoogleAuthManager,
-        **kwargs,
-    ):
+    def __init__(self, auth_manager: GoogleAuthManager):
         self.auth_manager = auth_manager
-        super().__init__(
-            name="GoogleSheetsTool",
-            tools=[
-                self.get_spreadsheet_data,
-                self.update_spreadsheet_data,
-                self.append_spreadsheet_data,
-            ],
-            **kwargs,
-        )
         log_info("Ferramenta Google Sheets conectada com sucesso.")
 
-    @property
+    def get_tools(self) -> List[Any]:
+        """Retorna uma lista de todas as ferramentas disponíveis neste toolkit."""
+        return [
+            StructuredTool.from_function(self.get_spreadsheet_data),
+            StructuredTool.from_function(self.update_spreadsheet_data),
+            StructuredTool.from_function(self.append_spreadsheet_data),
+        ]
+
     def service(self):
+        """Método auxiliar para obter o serviço autenticado da API."""
         return self.auth_manager.get_service("sheets", "v4")
 
     def get_spreadsheet_data(self, spreadsheet_id: str, range_name: str) -> str:
@@ -52,7 +47,7 @@ class GoogleSheetsTool(Toolkit):
             str: JSON string containing the spreadsheet data or an error message.
         """
         try:
-            result = self.service.spreadsheets().values().get(spreadsheetId=spreadsheet_id, range=range_name).execute() # type: ignore
+            result = self.service().spreadsheets().values().get(spreadsheetId=spreadsheet_id, range=range_name).execute() # type: ignore
             values = result.get("values", [])
             if not values:
                 return "Nenhum dado encontrado na planilha."
@@ -87,7 +82,7 @@ class GoogleSheetsTool(Toolkit):
         """
         try:
             body = {"values": values}
-            result = self.service.spreadsheets().values().update( # type: ignore
+            result = self.service().spreadsheets().values().update( # type: ignore
                 spreadsheetId=spreadsheet_id,
                 range=range_name,
                 valueInputOption="USER_ENTERED",
@@ -112,7 +107,7 @@ class GoogleSheetsTool(Toolkit):
         """
         try:
             body = {"values": values}
-            self.service.spreadsheets().values().append( # type: ignore
+            self.service().spreadsheets().values().append( # type: ignore
                 spreadsheetId=spreadsheet_id,
                 range=range_name,
                 valueInputOption="USER_ENTERED",

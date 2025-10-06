@@ -3,7 +3,7 @@ from email.mime.text import MIMEText
 from typing import Any, Dict
 from typing import List, Optional
 
-from agno.tools import Toolkit
+from langchain_core.tools import tool, StructuredTool
 from agno.utils.log import log_error, log_info
 
 try:
@@ -17,7 +17,7 @@ except ImportError:
 from google_auth import GoogleAuthManager
 
 
-class GoogleGmailTool(Toolkit):
+class GoogleGmailTool:
     """Um toolkit para interagir com a API do Gmail."""
 
     SCOPES = [
@@ -25,21 +25,20 @@ class GoogleGmailTool(Toolkit):
         "https://www.googleapis.com/auth/gmail.send",
     ]
 
-    def __init__(
-        self,
-        auth_manager: GoogleAuthManager,
-        **kwargs,
-    ):
+    def __init__(self, auth_manager: GoogleAuthManager):
         self.auth_manager = auth_manager
-        super().__init__(
-            name="GoogleGmailTool",
-            tools=[self.search_emails, self.get_email_details, self.send_email],
-            **kwargs,
-        )
         log_info("Ferramenta Google Gmail conectada com sucesso.")
 
-    @property
+    def get_tools(self) -> List[Any]:
+        """Retorna uma lista de todas as ferramentas disponíveis neste toolkit."""
+        return [
+            StructuredTool.from_function(self.search_emails),
+            StructuredTool.from_function(self.get_email_details),
+            StructuredTool.from_function(self.send_email),
+        ]
+
     def service(self):
+        """Método auxiliar para obter o serviço autenticado da API."""
         return self.auth_manager.get_service("gmail", "v1")
 
     def search_emails(self, query: str, max_results: int = 5) -> str:
@@ -54,14 +53,14 @@ class GoogleGmailTool(Toolkit):
         """
         try:
             log_info(f"Buscando e-mails com a consulta: '{query}'")
-            result = self.service.users().messages().list(userId="me", q=query, maxResults=max_results).execute()  # type: ignore
+            result = self.service().users().messages().list(userId="me", q=query, maxResults=max_results).execute()  # type: ignore
             messages = result.get("messages", [])
             if not messages:
                 return "Nenhum e-mail encontrado com o critério especificado."
 
             email_summaries = []
             for msg in messages:
-                msg_details = self.service.users().messages().get(userId="me", id=msg['id'], format='metadata', metadataHeaders=['Subject', 'From', 'Date']).execute() # type: ignore
+                msg_details = self.service().users().messages().get(userId="me", id=msg['id'], format='metadata', metadataHeaders=['Subject', 'From', 'Date']).execute() # type: ignore
                 headers = msg_details.get('payload', {}).get('headers', [])
                 subject = next((h['value'] for h in headers if h['name'] == 'Subject'), 'Sem assunto')
                 sender = next((h['value'] for h in headers if h['name'] == 'From'), 'Remetente desconhecido')
@@ -75,7 +74,7 @@ class GoogleGmailTool(Toolkit):
     def get_email_details(self, message_id: str) -> str:
         """Gets the full details of a specific email message."""
         try:
-            message = self.service.users().messages().get(userId="me", id=message_id).execute() # type: ignore
+            message = self.service().users().messages().get(userId="me", id=message_id).execute() # type: ignore
             payload = message.get('payload', {})
             headers = payload.get('headers', [])
             
@@ -104,7 +103,7 @@ class GoogleGmailTool(Toolkit):
             message["subject"] = subject
             raw_message = base64.urlsafe_b64encode(message.as_bytes()).decode()
             create_message = {"raw": raw_message}
-            self.service.users().messages().send(userId="me", body=create_message).execute() # type: ignore
+            self.service().users().messages().send(userId="me", body=create_message).execute() # type: ignore
             return f"E-mail enviado com sucesso para '{to}' com o assunto '{subject}'."
         except HttpError as error:
             return f"Ocorreu um erro ao enviar o e-mail: {error}"
