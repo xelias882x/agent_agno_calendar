@@ -26,6 +26,7 @@ A interface é construída com Streamlit, permitindo uma interação amigável e
 -   **Linguagem:** Python 3.9+
 -   **Interface Web:** Streamlit
 -   **Framework de Agente:** `agno`
+-   **Framework de Agente:** `LangChain`
 -   **Modelos de IA Suportados:**
     -   Google Gemini (ex: `gemini-1.5-flash-latest`)
     -   Modelos locais via Ollama (ex: `gtp-oss:20b`, `llama3`)

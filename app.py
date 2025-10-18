@@ -14,7 +14,7 @@ from google_auth import GoogleAuthManager
 from calendar_tool import GoogleCalendarTool
 from sheets_tool import GoogleSheetsTool
 from gmail_tool import GoogleGmailTool
-from llama_index.embeddings.gemini import GeminiEmbedding
+from llama_index.embeddings.gemini import GeminiEmbedding as GoogleGenerativeAIEmbedding
 from rag_setup import get_rag_query_engine
 from rag_tool import RAGTool
 
@@ -39,21 +39,37 @@ Regras importantes:
 - Não invente informações e não diga que você não tem acesso. Use as ferramentas fornecidas para obter a resposta."""
 
 @st.cache_resource
+def get_google_tools(scopes):
+    """Cria e gerencia as ferramentas do Google Workspace."""
+    auth_manager = GoogleAuthManager(token_path=GOOGLE_TOKEN_PATH, scopes=scopes) # O auth_manager é passado diretamente
+
+    calendar_tool = GoogleCalendarTool(auth_manager=auth_manager)
+    sheets_tool = GoogleSheetsTool(auth_manager=auth_manager)
+    gmail_tool = GoogleGmailTool(auth_manager=auth_manager)
+
+    tools = (
+        calendar_tool.get_tools() +
+        sheets_tool.get_tools() +
+        gmail_tool.get_tools()
+    )
+    return tools
+
+def create_agent_executor(llm: LLM, tools: list, prompt: ChatPromptTemplate) -> AgentExecutor:
+    """Cria um AgentExecutor com o LLM, ferramentas e prompt fornecidos."""
+    agent = create_tool_calling_agent(llm, tools, prompt)
+    return AgentExecutor(agent=agent, tools=tools, verbose=True)
+
+@st.cache_resource
 def get_agents():
     """Cria e armazena em cache as instâncias dos agentes e ferramentas."""
     # 1. Define todos os escopos necessários para as ferramentas
     all_scopes = list(set(GoogleCalendarTool.SCOPES + GoogleSheetsTool.SCOPES + GoogleGmailTool.SCOPES))
 
-    # 2. Cria o gerenciador de autenticação e as ferramentas base do Google
-    auth_manager = GoogleAuthManager(scopes=all_scopes, token_path=GOOGLE_TOKEN_PATH)
-    calendar = GoogleCalendarTool(auth_manager)
-    sheets = GoogleSheetsTool(auth_manager)
-    gmail = GoogleGmailTool(auth_manager)
-    
-    google_tools = calendar.get_tools() + sheets.get_tools() + gmail.get_tools()
+    # 2. Obtém as ferramentas do Google (cacheadas)
+    google_tools = get_google_tools(scopes=all_scopes)
 
-    # 3. Define os modelos de LLM
-    gemini_llm = ChatGoogleGenerativeAI(model="gemini-1.5-flash-latest", temperature=0, google_api_key=os.getenv("GEMINI_API_KEY"))
+    # 3. Define os modelos de LLM (LLMs)
+    gemini_llm = ChatGoogleGenerativeAI(model="gemini-2.5-flash-latest", temperature=0, google_api_key=os.getenv("GEMINI_API_KEY"))
     # IMPORTANTE: Verifique o nome exato do seu modelo local executando `ollama list` no terminal
     # e substitua o valor de `model` abaixo pelo nome correto.
     local_llm = ChatOpenAI(model="gpt-oss:20b", base_url="http://localhost:11434/v1", api_key="ollama", temperature=0)
@@ -68,21 +84,17 @@ def get_agents():
         ]
     )
 
-    # 5. Função para criar um agente
-    def create_agent(llm: LLM):
-        # A configuração global do LlamaIndex é feita dentro de get_rag_query_engine
-        # para garantir que seja executada antes da criação do motor de busca.
-        rag_tool = RAGTool(
-            query_engine=get_rag_query_engine(llm=llm, embed_model=GeminiEmbedding(model_name="models/text-embedding-004", api_key=os.getenv("GEMINI_API_KEY")))
-        )
-        all_tools = google_tools + [rag_tool]
-        agent = create_tool_calling_agent(llm, all_tools, prompt_template)
-        return AgentExecutor(agent=agent, tools=all_tools, verbose=True)
+    # 5. Cria a ferramenta de RAG (que depende do LLM e do modelo de embedding)
+    # O modelo de embedding pode ser inicializado uma vez, pois não depende do LLM do agente.
+    embed_model = GoogleGenerativeAIEmbedding(model_name="models/text-embedding-004", api_key=os.getenv("GEMINI_API_KEY"))
+    
+    rag_tool_gemini = RAGTool(query_engine=get_rag_query_engine(llm=gemini_llm, embed_model=embed_model))
+    rag_tool_local = RAGTool(query_engine=get_rag_query_engine(llm=local_llm, embed_model=embed_model))
 
     # 6. Cria os agentes
     agents = {
-        "Gemini 1.5 Flash": create_agent(gemini_llm),
-        "Modelo Local (Ollama)": create_agent(local_llm),
+        "Gemini 1.5 Flash": create_agent_executor(gemini_llm, google_tools + [rag_tool_gemini], prompt_template),
+        "Modelo Local (Ollama)": create_agent_executor(local_llm, google_tools + [rag_tool_local], prompt_template),
     }
     return agents
 
