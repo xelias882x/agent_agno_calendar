@@ -1,8 +1,8 @@
 import datetime
+import logging
 from typing import Any, List, Optional
 
 from langchain_core.tools import tool, StructuredTool
-from agno.utils.log import log_info
 
 try:
     from googleapiclient.errors import HttpError
@@ -21,7 +21,7 @@ class GoogleCalendarTool:
 
     def __init__(self, auth_manager: GoogleAuthManager):
         self.auth_manager = auth_manager
-        log_info("Ferramenta Google Calendar conectada com sucesso.")
+        logging.info("Ferramenta Google Calendar conectada com sucesso.")
 
     def get_tools(self) -> List[Any]:
         """Retorna uma lista de todas as ferramentas disponíveis neste toolkit."""

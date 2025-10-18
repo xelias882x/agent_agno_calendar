@@ -1,10 +1,10 @@
 import base64
+import logging
 from email.mime.text import MIMEText
 from typing import Any, Dict
 from typing import List, Optional
 
 from langchain_core.tools import tool, StructuredTool
-from agno.utils.log import log_error, log_info
 
 try:
     from googleapiclient.errors import HttpError
@@ -27,7 +27,7 @@ class GoogleGmailTool:
 
     def __init__(self, auth_manager: GoogleAuthManager):
         self.auth_manager = auth_manager
-        log_info("Ferramenta Google Gmail conectada com sucesso.")
+        logging.info("Ferramenta Google Gmail conectada com sucesso.")
 
     def get_tools(self) -> List[Any]:
         """Retorna uma lista de todas as ferramentas disponíveis neste toolkit."""
@@ -52,7 +52,7 @@ class GoogleGmailTool:
         - Para buscar e-mails não lidos: 'is:unread'
         """
         try:
-            log_info(f"Buscando e-mails com a consulta: '{query}'")
+            logging.info(f"Buscando e-mails com a consulta: '{query}'")
             result = self.service().users().messages().list(userId="me", q=query, maxResults=max_results).execute()  # type: ignore
             messages = result.get("messages", [])
             if not messages:
