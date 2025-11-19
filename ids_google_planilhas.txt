@@ -1,5 +1,9 @@
 id_plan_teste_agno = 1gFdzRsFWZaNoCYHzzIntHp2NnXCXOfTRvHCcCDXpdIw
 id_plan_empresa_teste = 12IBLqw513VIXIqFwYHoKj8TfsPtb3chUmXKKYMFq-lo
 
+me fale quais as informações contem na planilha de id 12IBLqw513VIXIqFwYHoKj8TfsPtb3chUmXKKYMFq-lo , na aba Plan1 
+me quais os meus proximos eventos no google calendar
+me fale quais foram meus emails recebidos no dia 09/11/2025
+
 
 na celula A1 da planilha chamada 'teste agno' de id 1gFdzRsFWZaNoCYHzzIntHp2NnXCXOfTRvHCcCDXpdIw adicione o texto Teste1"

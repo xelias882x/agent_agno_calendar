@@ -13,6 +13,7 @@ from gmail_tool import GoogleGmailTool
 from rag_setup import get_rag_query_engine
 from rag_tool import RAGTool
 
+
 GOOGLE_TOKEN_PATH = "google_token.json"
 
 SYSTEM_PROMPT = """Você é um assistente de suporte e produtividade. Sua principal função é ajudar os usuários fornecendo informações precisas de documentos internos e executando tarefas no Google Workspace.

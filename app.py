@@ -93,3 +93,4 @@ if st.sidebar.button("Nova Conversa"):
     if "messages" in st.session_state:
         st.session_state.messages = {}
     st.rerun()
+    
