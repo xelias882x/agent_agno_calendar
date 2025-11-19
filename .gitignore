@@ -1,14 +1,35 @@
-# Ambiente Virtual
-env/
-venv/
-
-# Arquivos de cache e banco de dados
-__pycache__/
-*.pyc
-chroma_db/
-
-# Arquivos de credenciais e tokens
+# Arquivos de Ambiente
+# Contém segredos e configurações específicas do ambiente de desenvolvimento.
 .env
+
+# Arquivos de Autenticação e Tokens
+# NUNCA adicione tokens de autenticação ao controle de versão.
 google_token.json
 credentials.json
-*.json
+*.json 
+# Se você tiver outros arquivos .json que não são tokens e precisam estar no repo, 
+# remova a linha acima e adicione o nome específico do arquivo de token.
+
+# Diretórios de ambiente virtual
+# Evita o envio de todas as bibliotecas instaladas para o repositório.
+/venv/
+/.venv/
+/env/
+/ENV/
+
+# Cache e arquivos compilados do Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Arquivos de configuração de IDEs
+.idea/
+.vscode/
+
+# Arquivos de configuração do Streamlit
+# Pode conter segredos ou configurações locais.
+.streamlit/
+
+# Arquivos gerados por testes
+.pytest_cache/
